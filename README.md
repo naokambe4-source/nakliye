@@ -58,6 +58,8 @@ Tema etkinleşince otomatik açılır: **Hoş geldiniz → Lisans → Eklentiler
 
 ## Kurulum (satıcı tarafı — bir kez)
 
+> Lisans sisteminin ayrıntılı, adım adım anlatımı: **[LISANS-REHBERI.md](LISANS-REHBERI.md)**
+
 ### 1) Anahtar çiftini üretin
 ```bash
 php license-server/tools/generate-keys.php
