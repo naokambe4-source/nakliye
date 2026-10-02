@@ -48,10 +48,10 @@ function nakliye_options_schema() {
 				'font_heading'    => array(
 					'type'    => 'select',
 					'label'   => __( 'Başlık yazı tipi', 'nakliye' ),
-					'default' => 'Poppins',
+					'default' => 'Sora',
 					'choices' => nakliye_font_choices(),
 				),
-				'border_radius'   => array( 'type' => 'number', 'label' => __( 'Köşe yuvarlaklığı (px)', 'nakliye' ), 'default' => 10 ),
+				'border_radius'   => array( 'type' => 'number', 'label' => __( 'Köşe yuvarlaklığı (px)', 'nakliye' ), 'default' => 16 ),
 			),
 		),
 		'contact'  => array(
@@ -150,7 +150,7 @@ function nakliye_options_schema() {
  * @return array
  */
 function nakliye_font_choices() {
-	$fonts = array( 'Inter', 'Poppins', 'Roboto', 'Open Sans', 'Montserrat', 'Rubik', 'Nunito', 'Lato', 'Barlow', 'Manrope', 'system-ui' );
+	$fonts = array( 'Sora', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Manrope', 'Poppins', 'Montserrat', 'Outfit', 'Figtree', 'DM Sans', 'system-ui' );
 	return array_combine( $fonts, $fonts );
 }
 
