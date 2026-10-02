@@ -145,6 +145,24 @@ Açık kalanlar: temel tema (üst/alt alan, blog, sayfalar), yönetim paneli ve 
 
 ---
 
+## 6b. Lisanssız kuranları görmek
+
+Temayı kuran **her site** (anahtar girmemiş olsa bile) günde bir sunucunuza kurulum bilgisini gönderir. Panelde **"🌐 Tema kurulu siteler"** tablosunda hepsini görürsünüz:
+
+- **Lisanslı** (yeşil) — geçerli anahtarla kullanılan siteler.
+- **Lisanssız** (kırmızı) — anahtar girmeden temayı kullanan siteler. Başlıkta toplam sayı da görünür.
+
+Her satırda alan adı, tema/WordPress/PHP sürümü, ilk ve son görülme tarihi yer alır. Böylece korsan kullanımı tespit edip o siteyle iletişime geçebilir veya yasal işlem başlatabilirsiniz.
+
+> Geliştirme adreslerinde (`localhost`, `.local`, `.test`) ping gönderilmez.
+
+## 6c. Otomatik Türkçe
+
+Tema etkinleştirildiğinde site dilini otomatik **Türkçe (tr_TR)** yapar ve WordPress ile Elementor'un Türkçe dil paketlerini indirir. Yönetim menüleri, blog, yorum formu gibi alanların İngilizce görünmesinin sebebi site dilinin İngilizce olmasıdır; bu ayarla düzelir.
+Elle değiştirmek için: **Ayarlar → Genel → Site Dili → Türkçe**.
+
+---
+
 ## 7. Sık sorulan sorular
 
 **Özel anahtarı kaybedersem?**
@@ -156,9 +174,21 @@ Hayır. Son başarılı doğrulamadan sonra **15 gün** (1 gün + 14 gün tolera
 **Müşteri temayı başkasına verirse?**
 Zip başka alan adında anahtarsız kilitli açılır. Aynı anahtarla başka sitede etkinleştirmeye çalışırsa site limitine takılır. Panelin *Son API olayları* bölümünde hangi alan adlarının denediğini görürsünüz.
 
-**Tamamen kırılamaz mı?**
-Hayır — kodu açık dağıtılan hiçbir PHP teması %100 kırılamaz değildir. Kodu okuyabilen kararlı biri kontrolleri tek tek yamalayabilir. Bu sistem "nulled" paylaşımları ve basit yamaları engeller (testte: sahte veritabanı kaydı, jeton düzenleme, dosya yamalama, yabancı dosya ekleme ve manifest silme engellendi). Daha güçlü koruma için:
-paneldeki **"Kodu sıkıştır"** kutusunu işaretli bırakın (yorumları ve boşlukları siler); profesyonel seviye için `inc/core/` klasörünü **ionCube** veya **SourceGuardian** ile şifreleyin.
+**Kodu tam olarak şifreleyebilir misiniz? Kırılmasın istiyorum.**
+Önemli bir gerçeği açıkça söyleyeyim: PHP kodunu "geri döndürülemez" biçimde şifrelemenin **tek güvenilir yolu ticari bir araçtır** — **ionCube** veya **SourceGuardian**. Bunlar kodu makine okunur hâle getirir ve müşteri sunucusunda bir "loader" (yükleyici) gerektirir.
+
+Temaya `eval(base64_decode(...))` gibi kendi kendini çözen sahte şifreleme **koymuyorum** — çünkü bu yöntem:
+- Wordfence, Sucuri gibi güvenlik eklentileri ve birçok hosting tarafından **virüs sanılıp engellenir** (müşteri sitesi kara listeye düşebilir),
+- 5 dakikada geri çözülür, yani gerçek koruma sağlamaz.
+
+Bu paketin sağladığı gerçek korumalar: **imzalı lisans** (sahte onay üretilemez), **imzalı dosya bütünlüğü** (dosya değişirse kilitlenir), **dağıtık kontroller** ve **lisanssız kullanım takibi**. Testte sahte veritabanı kaydı, jeton düzenleme, dosya yamalama, yabancı dosya ekleme ve manifest silme engellendi. Paneldeki **"Kodu sıkıştır"** kutusu da yorum/boşlukları silip okumayı zorlaştırır.
+
+**Profesyonel seviye için ionCube adımları (önerilen):**
+1. [ioncube.com/encoder](https://www.ioncube.com/encoder.php) üzerinden Encoder lisansı alın (ücretli).
+2. Yalnızca `inc/` klasörünü şifreleyin (CSS/JS/şablonlar açık kalabilir):
+   `ioncube_encoder5 inc/ -o inc-sifreli/ --replace-target`
+3. Şifreli `inc/` ile temayı yeniden paketleyin ve **bütünlük manifestini şifrelemeden _sonra_ oluşturun** (panelden zip indirmek bunu zaten sırayla yapar; şifrelenmiş kaynağı `tema-kaynak/` olarak koyun).
+4. Müşterilerinize "sunucunuzda ionCube Loader açık olmalı" notu verin (çoğu hostingde açıktır / tek tıkla açılır).
 
 **Lisans sunucusu verileri nerede?**
 `data/.ht-licenses.sqlite` dosyasında. Bu dosyayı düzenli yedekleyin.

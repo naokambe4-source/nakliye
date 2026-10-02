@@ -74,6 +74,20 @@ function nkls_db() {
 		)'
 	);
 	$pdo->exec( 'CREATE TABLE IF NOT EXISTS hits ( ip TEXT NOT NULL, ts INTEGER NOT NULL )' );
+	$pdo->exec(
+		'CREATE TABLE IF NOT EXISTS installs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			domain TEXT NOT NULL UNIQUE,
+			site_url TEXT NOT NULL DEFAULT "",
+			version TEXT NOT NULL DEFAULT "",
+			wp TEXT NOT NULL DEFAULT "",
+			php TEXT NOT NULL DEFAULT "",
+			ip TEXT NOT NULL DEFAULT "",
+			licensed INTEGER NOT NULL DEFAULT 0,
+			first_seen INTEGER NOT NULL,
+			last_seen INTEGER NOT NULL
+		)'
+	);
 	return $pdo;
 }
 
@@ -271,4 +285,50 @@ function nkls_secrets_exposed() {
 		return null;
 	}
 	return false !== strpos( $body, 'PRIVATE KEY' );
+}
+
+/* ------------------------------------------------------------------------- */
+/* Kurulum takibi (lisanslı + lisanssız siteler)                             */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Bir kurulumu kaydeder/günceller (domain benzersiz).
+ *
+ * @param string $domain  Alan adı (normalize edilmiş).
+ * @param string $site    Site adresi.
+ * @param string $version Tema sürümü.
+ * @param string $wp      WordPress sürümü.
+ * @param string $php     PHP sürümü.
+ */
+function nkls_record_install( $domain, $site, $version, $wp, $php ) {
+	$db   = nkls_db();
+	$now  = time();
+	$stmt = $db->prepare(
+		'INSERT INTO installs (domain, site_url, version, wp, php, ip, licensed, first_seen, last_seen)
+		 VALUES (:d, :s, :v, :wp, :php, :ip, 0, :now, :now)
+		 ON CONFLICT(domain) DO UPDATE SET
+		   site_url = :s, version = :v, wp = :wp, php = :php, ip = :ip, last_seen = :now'
+	);
+	$stmt->execute(
+		array(
+			':d'   => $domain,
+			':s'   => $site,
+			':v'   => substr( (string) $version, 0, 20 ),
+			':wp'  => substr( preg_replace( '/[^0-9.\-a-z]/i', '', (string) $wp ), 0, 20 ),
+			':php' => substr( preg_replace( '/[^0-9.\-a-z]/i', '', (string) $php ), 0, 20 ),
+			':ip'  => nkls_ip(),
+			':now' => $now,
+		)
+	);
+}
+
+/**
+ * Bir kurulumun lisans durumunu günceller.
+ *
+ * @param string $domain   Alan adı.
+ * @param bool   $licensed Lisanslı mı.
+ */
+function nkls_set_licensed( $domain, $licensed ) {
+	nkls_db()->prepare( 'UPDATE installs SET licensed = ? WHERE domain = ?' )
+		->execute( array( $licensed ? 1 : 0, $domain ) );
 }

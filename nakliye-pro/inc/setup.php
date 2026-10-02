@@ -221,3 +221,47 @@ function nakliye_logo_url( $light = false ) {
 
 add_filter( 'excerpt_length', static function () { return 24; } );
 add_filter( 'excerpt_more', static function () { return '…'; } );
+
+add_action( 'after_switch_theme', 'nakliye_set_turkish_locale' );
+/**
+ * Site dilini Türkçeye çevirir ve WordPress + Elementor dil paketlerini indirir.
+ *
+ * Yönetim panelindeki menüler, blog, yorum formu gibi WordPress'in kendi
+ * metinleri yalnızca site dili tr_TR olduğunda Türkçe görünür. Tema bu ayarı
+ * etkinleştirilince otomatik yapar.
+ */
+function nakliye_set_turkish_locale() {
+	if ( 'tr_TR' === get_locale() ) {
+		return;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/translation-install.php';
+
+	// WordPress çekirdek dil paketini indir.
+	if ( function_exists( 'wp_download_language_pack' ) ) {
+		$pack = wp_download_language_pack( 'tr_TR' );
+		if ( $pack ) {
+			update_option( 'WPLANG', 'tr_TR' );
+			if ( function_exists( 'switch_to_locale' ) ) {
+				switch_to_locale( 'tr_TR' );
+			}
+		}
+	}
+
+	// Kurulu eklentilerin (Elementor dahil) Türkçe paketlerini indir.
+	if ( function_exists( 'wp_get_available_translations' ) ) {
+		nakliye_update_translations();
+	}
+}
+
+/**
+ * Eklenti/tema çevirilerini günceller.
+ */
+function nakliye_update_translations() {
+	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+	if ( ! class_exists( 'Language_Pack_Upgrader' ) ) {
+		return;
+	}
+	$upgrader = new Language_Pack_Upgrader( new Automatic_Upgrader_Skin() );
+	$upgrader->bulk_upgrade();
+}

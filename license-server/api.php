@@ -45,6 +45,18 @@ try {
 	$domain  = nkls_normalize_domain( isset( $_POST['domain'] ) ? $_POST['domain'] : '' );
 	$nonce   = substr( preg_replace( '/[^A-Za-z0-9]/', '', isset( $_POST['nonce'] ) ? (string) $_POST['nonce'] : '' ), 0, 64 );
 	$product = isset( $_POST['product'] ) ? (string) $_POST['product'] : '';
+	$site    = isset( $_POST['site'] ) ? substr( (string) $_POST['site'], 0, 255 ) : '';
+	$version = isset( $_POST['version'] ) ? substr( (string) $_POST['version'], 0, 20 ) : '';
+
+	// Her istekte kurulumu kaydet (lisanslı veya lisanssız — hepsi panelde görünür).
+	if ( $domain && $product === $config['product'] ) {
+		nkls_record_install( $domain, $site, $version, isset( $_POST['wp'] ) ? (string) $_POST['wp'] : '', isset( $_POST['php'] ) ? (string) $_POST['php'] : '' );
+	}
+
+	// Telemetri: lisans anahtarı girilmemiş siteler yalnızca "ping" gönderir.
+	if ( 'ping' === $action ) {
+		nkls_respond( array( 'success' => true ) );
+	}
 
 	if ( ! in_array( $action, array( 'activate', 'check', 'deactivate' ), true ) || ! $key || ! $domain || strlen( $nonce ) < 16 ) {
 		nkls_respond( array( 'success' => false, 'message' => 'Eksik veya geçersiz istek.' ), 400 );
@@ -59,6 +71,7 @@ try {
 
 	if ( ! $license ) {
 		nkls_log( null, $action, $domain, 'not_found' );
+		nkls_set_licensed( $domain, false );
 		nkls_respond( array( 'success' => false, 'message' => 'Lisans anahtarı bulunamadı.' ) );
 	}
 
@@ -67,15 +80,18 @@ try {
 	if ( 'deactivate' === $action ) {
 		$db->prepare( 'DELETE FROM activations WHERE license_id = ? AND domain = ?' )->execute( array( $lid, $domain ) );
 		nkls_log( $lid, $action, $domain, 'ok' );
+		nkls_set_licensed( $domain, false );
 		nkls_respond( array( 'success' => true, 'message' => 'Lisans bu alan adından kaldırıldı.' ) );
 	}
 
 	if ( 'active' !== $license['status'] ) {
 		nkls_log( $lid, $action, $domain, 'revoked' );
+		nkls_set_licensed( $domain, false );
 		nkls_respond( array( 'success' => false, 'message' => 'Bu lisans iptal edilmiş. Destek ekibiyle iletişime geçin.' ) );
 	}
 	if ( $license['expires_at'] && (int) $license['expires_at'] < time() ) {
 		nkls_log( $lid, $action, $domain, 'expired' );
+		nkls_set_licensed( $domain, false );
 		nkls_respond( array( 'success' => false, 'message' => 'Lisansın süresi dolmuş. Lütfen yenileyin.' ) );
 	}
 
@@ -89,6 +105,7 @@ try {
 	if ( ! $activation ) {
 		if ( 'check' === $action ) {
 			nkls_log( $lid, $action, $domain, 'not_activated' );
+			nkls_set_licensed( $domain, false );
 			nkls_respond( array( 'success' => false, 'message' => 'Lisans bu alan adında etkin değil.' ) );
 		}
 		$stmt = $db->prepare( 'SELECT COUNT(*) FROM activations WHERE license_id = ?' );
@@ -122,6 +139,7 @@ try {
 	);
 
 	nkls_log( $lid, $action, $domain, 'ok' );
+	nkls_set_licensed( $domain, true );
 	nkls_respond( array( 'success' => true ) + $signed );
 } catch ( Throwable $e ) {
 	error_log( '[nakliye-license] ' . $e->getMessage() );

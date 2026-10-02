@@ -39,6 +39,46 @@ final class Nakliye_Elementor {
 		add_action( 'elementor/theme/register_locations', array( __CLASS__, 'register_locations' ) );
 		add_action( 'elementor/editor/after_enqueue_styles', array( __CLASS__, 'editor_styles' ) );
 		add_action( 'elementor/preview/enqueue_styles', array( __CLASS__, 'preview_styles' ) );
+
+		// "Kit silinmiş" hatasını önle: etkin kit yoksa yeniden oluştur.
+		add_action( 'elementor/init', array( __CLASS__, 'ensure_kit' ), 20 );
+		add_action( 'admin_init', array( __CLASS__, 'ensure_kit' ) );
+	}
+
+	/**
+	 * Elementor "kit" (genel ayarlar) kaydı silinmiş/çöpe atılmışsa yeniden oluşturur.
+	 * Böylece "Varsayılan kit silindi" hatası çıkmaz ve düzenleyici açılır.
+	 */
+	public static function ensure_kit() {
+		if ( ! did_action( 'elementor/loaded' ) || ! class_exists( '\Elementor\Plugin' ) ) {
+			return;
+		}
+		$plugin = \Elementor\Plugin::$instance;
+		if ( empty( $plugin->kits_manager ) ) {
+			return;
+		}
+
+		$kit_id = (int) get_option( 'elementor_active_kit' );
+		$post   = $kit_id ? get_post( $kit_id ) : null;
+
+		// Kit yok, çöpte ya da bozuksa yeniden oluştur.
+		if ( $post && 'trash' !== $post->post_status && 'elementor_library' === $post->post_type ) {
+			return;
+		}
+
+		// create_default_kit() option dolu olduğunda (bozuk bile olsa) hiçbir şey
+		// yapmadığı için önce geçersiz kaydı temizliyoruz.
+		delete_option( 'elementor_active_kit' );
+
+		$new_id = false;
+		if ( method_exists( $plugin->kits_manager, 'create_default' ) ) {
+			$new_id = $plugin->kits_manager->create_default();
+		} elseif ( method_exists( $plugin->kits_manager, 'create_default_kit' ) ) {
+			$new_id = \Elementor\Core\Kits\Manager::create_default_kit();
+		}
+		if ( $new_id && ! is_wp_error( $new_id ) ) {
+			update_option( 'elementor_active_kit', $new_id );
+		}
 	}
 
 	/**
@@ -93,7 +133,7 @@ final class Nakliye_Elementor {
 		$cpt = get_option( 'elementor_cpt_support', array( 'page', 'post' ) );
 		$cpt = array_unique( array_merge( (array) $cpt, array( 'page', 'post', 'nakliye_hizmet' ) ) );
 		update_option( 'elementor_cpt_support', $cpt );
-		update_option( 'elementor_container_width', 1200 );
+		self::ensure_kit();
 	}
 
 	/**

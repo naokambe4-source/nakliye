@@ -141,7 +141,14 @@ $acts = array();
 foreach ( $db->query( 'SELECT * FROM activations ORDER BY last_seen DESC' ) as $row ) {
 	$acts[ $row['license_id'] ][] = $row;
 }
-$events = $db->query( 'SELECT e.*, l.license_key FROM events e LEFT JOIN licenses l ON l.id = e.license_id ORDER BY e.id DESC LIMIT 30' )->fetchAll();
+$events   = $db->query( 'SELECT e.*, l.license_key FROM events e LEFT JOIN licenses l ON l.id = e.license_id ORDER BY e.id DESC LIMIT 30' )->fetchAll();
+$installs  = $db->query( 'SELECT * FROM installs ORDER BY last_seen DESC LIMIT 200' )->fetchAll();
+$unlic_cnt = 0;
+foreach ( $installs as $i ) {
+	if ( ! (int) $i['licensed'] ) {
+		++$unlic_cnt;
+	}
+}
 $stats  = $db->query( "SELECT (SELECT COUNT(*) FROM licenses) t, (SELECT COUNT(*) FROM licenses WHERE status='active') a, (SELECT COUNT(*) FROM activations) s" )->fetch();
 
 function nkls_csrf_field() {
@@ -251,6 +258,27 @@ function nkls_csrf_field() {
 				</tr>
 			<?php endforeach; ?>
 			<?php if ( ! $licenses ) : ?><tr><td colspan="6">Kayıt yok.</td></tr><?php endif; ?>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="card">
+		<h3>🌐 Tema kurulu siteler <?php if ( $unlic_cnt ) : ?><span class="b b-revoked"><?php echo (int) $unlic_cnt; ?> lisanssız</span><?php endif; ?></h3>
+		<p class="small">Temayı kuran tüm siteler (lisanslı veya değil) günde bir sunucuya haber verir ve burada listelenir. <strong>Lisanssız</strong> satırlar, anahtar girmeden temayı kullanan sitelerdir.</p>
+		<table>
+			<thead><tr><th>Alan adı</th><th>Durum</th><th>Sürüm</th><th>WP / PHP</th><th>İlk görülme</th><th>Son görülme</th></tr></thead>
+			<tbody>
+			<?php foreach ( $installs as $i ) : ?>
+				<tr<?php echo (int) $i['licensed'] ? '' : ' style="background:#fff7f7"'; ?>>
+					<td><a href="http://<?php echo nkls_e( $i['domain'] ); ?>" target="_blank" rel="noopener"><?php echo nkls_e( $i['domain'] ); ?></a></td>
+					<td><?php echo (int) $i['licensed'] ? '<span class="b b-active">Lisanslı</span>' : '<span class="b b-revoked">Lisanssız</span>'; ?></td>
+					<td><?php echo nkls_e( $i['version'] ); ?></td>
+					<td><?php echo nkls_e( $i['wp'] ); ?> / <?php echo nkls_e( $i['php'] ); ?></td>
+					<td><?php echo date( 'd.m.Y', (int) $i['first_seen'] ); ?></td>
+					<td><?php echo date( 'd.m.Y H:i', (int) $i['last_seen'] ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+			<?php if ( ! $installs ) : ?><tr><td colspan="6">Henüz kurulum kaydı yok.</td></tr><?php endif; ?>
 			</tbody>
 		</table>
 	</div>

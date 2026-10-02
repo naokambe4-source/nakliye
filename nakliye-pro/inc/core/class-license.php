@@ -48,6 +48,29 @@ final class Nakliye_License {
 		add_action( 'wp_footer', array( $this, 'frontend_watermark' ), 999 );
 		add_action( 'switch_theme', array( $this, 'unschedule' ) );
 		add_action( 'upgrader_process_complete', array( 'Nakliye_Integrity', 'flush' ) );
+		// Lisanssız siteler de günde bir sunucuya haber verir (satıcı panelde görsün).
+		add_action( 'admin_init', array( $this, 'maybe_ping' ) );
+	}
+
+	/**
+	 * Lisans girilmemiş olsa bile günde bir kez sunucuya kurulum bilgisi gönderir.
+	 * Böylece satıcı, temayı lisanssız kuran siteleri panelde görebilir.
+	 */
+	public function maybe_ping() {
+		if ( nakliye_is_dev_domain() || ! nakliye_public_key_ready() ) {
+			return;
+		}
+		if ( get_transient( 'nakliye_pinged' ) ) {
+			return;
+		}
+		set_transient( 'nakliye_pinged', 1, DAY_IN_SECONDS );
+
+		$data = $this->get_data();
+		// Anahtar varsa normal doğrulama zaten bilgi gönderir; yalnızca anahtarsız siteler ping atar.
+		if ( ! empty( $data['key'] ) ) {
+			return;
+		}
+		$this->request( 'ping', array( 'nonce' => wp_generate_password( 32, false, false ) ) );
 	}
 
 	public function __clone() {
