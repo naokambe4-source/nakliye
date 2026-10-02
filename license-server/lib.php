@@ -164,7 +164,7 @@ function nkls_installed() {
 }
 
 /**
- * Bu klasörün dışarıdan görünen adresi, ör. https://lisans.site.com/buryaa
+ * Bu klasörün dışarıdan görünen adresi, ör. https://lisans.site.com
  *
  * @return string
  */

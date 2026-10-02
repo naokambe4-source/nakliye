@@ -36,21 +36,24 @@ Bu rehber lisans sisteminin **ne olduğunu**, **nasıl kurulduğunu** ve **günl
 ## 2. Bir kez yapılacak kurulum (terminal gerekmez)
 
 ### Adım 1 — Dosyaları yükleyin
-`lisans-sunucusu-yukle.zip` dosyasını hosting panelinizden (cPanel → Dosya Yöneticisi) lisans klasörünüze yükleyip **orada çıkartın**.
-Örnek: `https://lisans.guvenyolnakliyat.com/buryaa/`
+`lisans.guvenyolnakliyat.com` alt alan adının **kök klasörünü** bulun. cPanel → **Alan Adları / Subdomains** sayfasında "Belge Kökü" (Document Root) sütununda yazar; genelde `public_html/lisans` veya `/lisans.guvenyolnakliyat.com` olur.
 
-Klasörde şunlar olmalı: `index.php`, `install.php`, `admin.php`, `api.php`, `data/`, `keys/`, `tema-kaynak/` …
-> Zip'i çıkartınca fazladan bir alt klasör oluştuysa (ör. `buryaa/lisans-sunucusu/`), içindekileri bir üst klasöre taşıyın.
+1. Dosya Yöneticisi ile o klasöre girin. İçinde eski lisans dosyaları varsa silin (`cgi-bin` ve `.well-known` klasörlerine dokunmayın).
+2. `lisans-sunucusu-yukle.zip` dosyasını yükleyip **orada çıkartın**.
+3. Klasörde doğrudan şunlar görünmeli: `index.php`, `install.php`, `admin.php`, `api.php`, `data/`, `keys/`, `tema-kaynak/` …
+
+> Zip'i çıkartınca fazladan bir alt klasör oluştuysa (ör. `lisans/lisans-sunucusu-yukle/`), içindekileri bir üst klasöre taşıyın.
+> Klasörde hosting firmasının koyduğu `index.html` / `default.html` varsa silin, yoksa sihirbaz yerine o sayfa açılır.
 
 ### Adım 2 — Kurulum sihirbazını çalıştırın
-Tarayıcıda klasör adresini açın: `https://lisans.guvenyolnakliyat.com/buryaa/`
+Tarayıcıda adresinizi açın: `https://lisans.guvenyolnakliyat.com/`
 1. Sihirbaz sunucuyu kontrol eder (PHP sürümü, OpenSSL, SQLite, yazma izni). Kırmızı satır varsa cPanel → **"PHP Sürümü Seç"** bölümünden düzeltin.
 2. Bir **panel parolası** belirleyin → **Kurulumu tamamla**.
 3. Sihirbaz anahtar çiftini üretir, veritabanını kurar ve kendini kilitler.
 
 ### Adım 3 — Tema zip'ini panelden indirin
 Panelde **"📦 Müşteriye verilecek tema paketi"** kutusu:
-- *Lisans sunucusu adresi* otomatik dolu gelir (kontrol edin: `https://lisans.guvenyolnakliyat.com/buryaa`)
+- *Lisans sunucusu adresi* otomatik dolu gelir (kontrol edin: `https://lisans.guvenyolnakliyat.com`)
 - **⬇ Tema zip'ini oluştur ve indir** → `nakliye-pro-1.0.0.zip`
 
 Bu zip; açık anahtarınızı ve sunucu adresinizi içerir, dosyaları imzalıdır. **Müşteriye verilecek dosya budur.**
@@ -66,19 +69,19 @@ Panel, özel anahtarın internetten indirilebilir olup olmadığını kendisi te
 | Belirti | Çözüm |
 |---|---|
 | **500 Internal Server Error** | Klasördeki `.htaccess` dosyasını geçici olarak silip deneyin. Açılırsa hosting firmanıza bildirin; gizli dosyalar `.ht-` önekli olduğu için Apache/LiteSpeed yine korur. |
-| **403 / boş sayfa** (klasör adresinde) | `index.php` yüklenmemiş; zip'i yeniden çıkartın. Ya da doğrudan `.../buryaa/install.php` açın. |
+| **403 / boş sayfa** (klasör adresinde) | `index.php` yüklenmemiş; zip'i yeniden çıkartın. Ya da doğrudan `https://lisans.guvenyolnakliyat.com/install.php` açın. Klasörde `index.html` varsa silin. |
 | **"RSA anahtarı üretilemedi"** | Hosting'de OpenSSL kısıtlı. Firmanızdan `openssl_pkey_new` desteği isteyin. |
 | **"data/ klasörüne yazılamadı"** | Dosya Yöneticisinde `data` ve `keys` klasörlerinin iznini **755** yapın. |
-| **Müşteri: "Lisans sunucusuna bağlanılamadı"** | Adresi tarayıcıda deneyin: `.../buryaa/api.php` → `{"success":false,"message":"Yalnızca POST."}` görmelisiniz. SSL sertifikasının geçerli olduğundan emin olun. |
+| **Müşteri: "Lisans sunucusuna bağlanılamadı"** | Adresi tarayıcıda deneyin: `https://lisans.guvenyolnakliyat.com/api.php` → `{"success":false,"message":"Yalnızca POST."}` görmelisiniz. SSL sertifikasının geçerli olduğundan emin olun. |
 
 > Terminal kullanabiliyorsanız aynı işleri komutla da yapabilirsiniz:
-> `php license-server/tools/generate-keys.php` ve `php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com/buryaa`
+> `php license-server/tools/generate-keys.php` ve `php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com`
 
 ---
 
 ## 3. Lisans satmak (her satışta)
 
-**Yöntem A — Panelden:** `https://lisans.guvenyolnakliyat.com/buryaa/admin.php` → *Yeni lisans oluştur*
+**Yöntem A — Panelden:** `https://lisans.guvenyolnakliyat.com/admin.php` → *Yeni lisans oluştur*
 - **Müşteri / E-posta:** kayıt için
 - **Site limiti:** kaç alan adında kullanılabilir (genelde 1)
 - **Süre:** Süresiz, 1 yıl veya 30 gün (deneme)

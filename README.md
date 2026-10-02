@@ -61,7 +61,7 @@ Tema etkinleşince otomatik açılır: **Hoş geldiniz → Lisans → Eklentiler
 > Ayrıntılı anlatım ve sorun giderme: **[LISANS-REHBERI.md](LISANS-REHBERI.md)**
 
 1. `license-server/` klasörünün içeriğini ve `tema-kaynak/nakliye-pro/` klasörünü lisans adresinize yükleyin
-   (hazır paket: `lisans-sunucusu-yukle.zip`), ör. `https://lisans.guvenyolnakliyat.com/buryaa/`.
+   (hazır paket: `lisans-sunucusu-yukle.zip`), ör. `https://lisans.guvenyolnakliyat.com/`.
 2. Tarayıcıda o adresi açın → **kurulum sihirbazı** gereksinimleri kontrol eder, panel parolasını alır, RSA anahtarını üretir.
 3. Panelde **"Tema zip'ini oluştur ve indir"** → müşteriye verilecek, imzalı ve sunucu adresiniz yazılı `nakliye-pro-1.0.0.zip`.
 4. `keys/.ht-private.pem` ve `data/.ht-licenses.sqlite` dosyalarını yedekleyin.
@@ -71,7 +71,7 @@ Komut satırı tercih edenler için:
 ```bash
 php license-server/tools/generate-keys.php
 php license-server/tools/create-license.php "Müşteri" musteri@mail.com 1 365
-php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com/buryaa [--obfuscate]
+php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com [--obfuscate]
 ```
 
 ---

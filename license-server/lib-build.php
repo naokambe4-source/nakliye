@@ -15,7 +15,7 @@ if ( ! defined( 'NKLS' ) ) {
  * @param array $opts {
  *     @type string $source      Tema kaynak klasörü (nakliye-pro).
  *     @type string $private_pem Özel anahtar (PEM).
- *     @type string $server_url  Lisans sunucusu adresi (ör. https://lisans.site.com/buryaa).
+ *     @type string $server_url  Lisans sunucusu adresi (ör. https://lisans.site.com).
  *     @type string $purchase    Satın alma sayfası adresi (isteğe bağlı).
  *     @type bool   $obfuscate   Çekirdek dosyalardan yorum/boşluk silinsin mi.
  *     @type string $zip_path    Zip'in yazılacağı yol (boşsa geçici dosya).
