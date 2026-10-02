@@ -1,0 +1,6 @@
+# Gizli anahtarlar ve veritabanı asla depoya girmez
+license-server/keys/*.pem
+license-server/data/*.sqlite
+license-server/config.local.php
+dist/
+.DS_Store

@@ -1,0 +1,56 @@
+/* Nakliye Pro — kurulum sihirbazı */
+html { background: #0f2a4a; }
+body.nk-wizard-body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 80% 0%, #1e3a8a 0%, #0f2a4a 45%, #020617 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; }
+.nk-wizard { max-width: 860px; margin: 0 auto; padding: 40px 20px; }
+.nk-wizard__head { text-align: center; color: #fff; margin-bottom: 26px; }
+.nk-wizard__logo { display: inline-flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 800; margin-bottom: 26px; }
+.nk-wizard__logo svg { color: #f97316; }
+.nk-wizard__steps { display: flex; justify-content: center; gap: 6px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
+.nk-wizard__steps li { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; }
+.nk-wizard__steps li span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid currentColor; font-size: 12px; }
+.nk-wizard__steps li.is-current { background: rgba(255,255,255,.1); color: #fff; }
+.nk-wizard__steps li.is-current span { background: #f97316; border-color: #f97316; }
+.nk-wizard__steps li.is-done { color: #86efac; }
+.nk-wizard__card { background: #fff; border-radius: 20px; padding: 48px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.6); }
+@media (max-width: 640px) { .nk-wizard__card { padding: 28px 22px; } }
+.nk-wizard__card h1 { font-size: 28px; margin: 0 0 12px; color: #0f172a; }
+.nk-wizard__card p { font-size: 15px; line-height: 1.7; color: #475569; }
+.nk-wizard__center { text-align: center; }
+.nk-wizard__big-icon { display: inline-grid; place-items: center; width: 120px; height: 120px; border-radius: 50%; background: #fff7ed; color: #f97316; margin-bottom: 20px; }
+.nk-wizard__big-icon--ok { background: #dcfce7; color: #16a34a; }
+.nk-wizard__list { list-style: none; padding: 0; display: inline-grid; gap: 10px; text-align: left; margin: 10px 0 0; }
+.nk-wizard__list li { display: flex; gap: 10px; align-items: center; font-weight: 600; }
+.nk-wizard__list svg { color: #16a34a; }
+.nk-wizard__actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+.nk-wizard__center .nk-wizard__actions { justify-content: center; }
+.nk-wizard .button-primary { background: #f97316 !important; border-color: #f97316 !important; }
+.nk-wizard .button-primary:hover { background: #ea580c !important; }
+.nk-wizard .button-hero { border-radius: 10px !important; }
+.nk-wizard__input { width: 100%; padding: 16px !important; font-size: 18px !important; text-align: center; font-family: ui-monospace, monospace; letter-spacing: .06em; border: 2px solid #e2e8f0 !important; border-radius: 12px !important; }
+.nk-wizard__alert { padding: 14px 18px; border-radius: 10px; background: #eff6ff; color: #1e40af; margin: 16px 0; font-weight: 500; }
+.nk-wizard__alert--error { background: #fef2f2; color: #991b1b; }
+.nk-wizard__alert--success { background: #f0fdf4; color: #166534; }
+.nk-wizard__plugins, .nk-wizard__options { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; }
+.nk-wizard__plugins li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 18px; border: 1.5px solid #e2e8f0; border-radius: 12px; }
+.nk-wizard__plugins label, .nk-wizard__options label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.nk-wizard__options label { padding: 16px 18px; border: 1.5px solid #e2e8f0; border-radius: 12px; flex-wrap: wrap; }
+.nk-wizard__plugins small, .nk-wizard__options small { display: block; color: #64748b; width: 100%; }
+.nk-wizard__options small { padding-left: 28px; }
+.nk-wizard input[type=checkbox] { margin-top: 3px; }
+.nk-req { font-style: normal; font-size: 11px; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+.nk-wizard__state { font-weight: 700; color: #16a34a; white-space: nowrap; }
+.nk-wizard__state.is-error { color: #dc2626; white-space: normal; max-width: 260px; text-align: right; font-size: 12px; }
+.nk-wizard__state.is-busy::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 6px; border: 2px solid #f97316; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; animation: nkspin .7s linear infinite; }
+@keyframes nkspin { to { transform: rotate(360deg); } }
+.nk-wizard__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .nk-wizard__grid { grid-template-columns: 1fr; } }
+.nk-wizard__grid label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 13px; }
+.nk-wizard__grid input[type=text], .nk-wizard__grid input[type=email] { padding: 10px 12px; border-radius: 8px; border-color: #cbd5e1; }
+.nk-wizard__full { grid-column: 1 / -1; }
+.nk-wizard__colors { display: flex; gap: 20px; }
+.nk-media { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-weight: 600; font-size: 13px; }
+.nk-media__preview img { max-height: 60px; width: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px; }
+.nk-wizard__log { margin-top: 20px; padding: 16px 20px; border-radius: 12px; background: #0f172a; color: #86efac; font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.8; }
+.nk-wizard__foot { text-align: center; margin-top: 20px; }
+.nk-wizard__foot a { color: rgba(255,255,255,.6); text-decoration: none; }
+.nk-wizard__foot a:hover { color: #fff; }

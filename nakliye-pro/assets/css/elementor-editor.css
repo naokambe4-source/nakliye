@@ -1,0 +1,5 @@
+/* Elementor panelinde Nakliye Pro kategorisi */
+#elementor-panel-category-nakliye .elementor-element .icon,
+#elementor-panel-category-nakliye .elementor-element .icon i { color: #f97316; }
+#elementor-panel-category-nakliye .elementor-panel-category-title { color: #f97316; font-weight: 700; }
+#elementor-panel-category-nakliye .elementor-element:hover { box-shadow: 0 0 0 1px #f97316; }
