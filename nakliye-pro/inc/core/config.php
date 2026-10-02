@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! defined( 'NAKLIYE_LICENSE_SERVER' ) ) {
-	define( 'NAKLIYE_LICENSE_SERVER', 'https://lisans.example.com' );
+	define( 'NAKLIYE_LICENSE_SERVER', 'https://lisans.guvenyolnakliyat.com/buryaa' );
 }
 
 // Uzak doğrulama aralığı ve sunucuya ulaşılamadığında tanınan ek süre.

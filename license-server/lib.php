@@ -148,3 +148,127 @@ function nkls_log( $license_id, $action, $domain, $result ) {
 function nkls_e( $s ) {
 	return htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' );
 }
+
+/* ------------------------------------------------------------------------- */
+/* Kurulum yardımcıları                                                      */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Sunucu kurulmuş mu? (parola + özel anahtar mevcut)
+ *
+ * @return bool
+ */
+function nkls_installed() {
+	$config = nkls_config();
+	return ! empty( $config['admin_password_hash'] ) && is_readable( $config['private_key_path'] );
+}
+
+/**
+ * Bu klasörün dışarıdan görünen adresi, ör. https://lisans.site.com/buryaa
+ *
+ * @return string
+ */
+function nkls_base_url() {
+	$https = ( ! empty( $_SERVER['HTTPS'] ) && 'off' !== strtolower( (string) $_SERVER['HTTPS'] ) )
+		|| ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === strtolower( (string) $_SERVER['HTTP_X_FORWARDED_PROTO'] ) )
+		|| ( isset( $_SERVER['SERVER_PORT'] ) && 443 === (int) $_SERVER['SERVER_PORT'] );
+	$host  = isset( $_SERVER['HTTP_HOST'] ) ? preg_replace( '/[^A-Za-z0-9.\-:]/', '', (string) $_SERVER['HTTP_HOST'] ) : 'localhost';
+	$path  = isset( $_SERVER['SCRIPT_NAME'] ) ? str_replace( '\\', '/', dirname( (string) $_SERVER['SCRIPT_NAME'] ) ) : '';
+	$path  = rtrim( $path, '/.' );
+	return ( $https ? 'https' : 'http' ) . '://' . $host . $path;
+}
+
+/**
+ * Özel anahtardan türetilen açık anahtar (PEM).
+ *
+ * @return string
+ */
+function nkls_public_key() {
+	$path = nkls_config()['private_key_path'];
+	$key  = is_readable( $path ) ? openssl_pkey_get_private( file_get_contents( $path ) ) : false;
+	if ( ! $key ) {
+		return '';
+	}
+	$details = openssl_pkey_get_details( $key );
+	return isset( $details['key'] ) ? $details['key'] : '';
+}
+
+/**
+ * RSA-2048 anahtar üretir. Bazı hostinglerde openssl.cnf yolu gerekir; yedekleri dener.
+ *
+ * @return string|false PEM özel anahtar.
+ */
+function nkls_generate_private_key() {
+	$base       = array( 'private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA );
+	$candidates = array( null );
+	foreach ( array( getenv( 'OPENSSL_CONF' ), '/etc/ssl/openssl.cnf', '/usr/lib/ssl/openssl.cnf', '/usr/local/ssl/openssl.cnf', 'C:/xampp/apache/conf/openssl.cnf' ) as $cnf ) {
+		if ( $cnf && is_file( $cnf ) ) {
+			$candidates[] = $cnf;
+		}
+	}
+	foreach ( $candidates as $cnf ) {
+		$opts = $cnf ? $base + array( 'config' => $cnf ) : $base;
+		$res  = @openssl_pkey_new( $opts );
+		if ( $res && @openssl_pkey_export( $res, $pem, null, $cnf ? array( 'config' => $cnf ) : array() ) ) {
+			return $pem;
+		}
+	}
+	return false;
+}
+
+/**
+ * Sunucu gereksinimleri.
+ *
+ * @return array[] [etiket, değer, tamam mı, zorunlu mu]
+ */
+function nkls_requirements() {
+	$config = nkls_config();
+	$dirs   = array( dirname( $config['db_path'] ), dirname( $config['private_key_path'] ) );
+	$write  = true;
+	foreach ( $dirs as $dir ) {
+		if ( ! is_dir( $dir ) ) {
+			@mkdir( $dir, 0755, true );
+		}
+		$write = $write && is_dir( $dir ) && is_writable( $dir );
+	}
+	return array(
+		array( 'PHP sürümü (7.4+)', PHP_VERSION, version_compare( PHP_VERSION, '7.4', '>=' ), true ),
+		array( 'OpenSSL eklentisi', extension_loaded( 'openssl' ) ? 'Var' : 'Yok', extension_loaded( 'openssl' ), true ),
+		array( 'PDO SQLite eklentisi', extension_loaded( 'pdo_sqlite' ) ? 'Var' : 'Yok', extension_loaded( 'pdo_sqlite' ), true ),
+		array( 'data/ ve keys/ yazılabilir', $write ? 'Evet' : 'Hayır (izinleri 755 yapın)', $write, true ),
+		array( 'Zip eklentisi (tema paketi için)', class_exists( 'ZipArchive' ) ? 'Var' : 'Yok', class_exists( 'ZipArchive' ), false ),
+		array( 'Tema kaynağı (tema-kaynak/nakliye-pro)', is_dir( $config['theme_source'] ) ? 'Bulundu' : 'Yok', is_dir( $config['theme_source'] ), false ),
+		array( 'HTTPS', 0 === strpos( nkls_base_url(), 'https://' ) ? 'Evet' : 'Hayır', 0 === strpos( nkls_base_url(), 'https://' ), false ),
+	);
+}
+
+/**
+ * Sihirbaz ayarlarını kaydeder.
+ *
+ * @param array $values Değerler.
+ * @return bool
+ */
+function nkls_save_settings( array $values ) {
+	$path    = nkls_config()['settings_path'];
+	$current = is_file( $path ) ? include $path : array();
+	$current = is_array( $current ) ? array_merge( $current, $values ) : $values;
+	$php     = "<?php\n// Nakliye Pro lisans sunucusu ayarları (kurulum sihirbazı tarafından yazıldı).\nreturn " . var_export( $current, true ) . ";\n";
+	return false !== @file_put_contents( $path, $php, LOCK_EX );
+}
+
+/**
+ * Gizli dosyalar dışarıdan okunabiliyor mu? (sunucu kendi kendini dener)
+ *
+ * @return bool|null true = AÇIK (tehlikeli), false = kapalı, null = test edilemedi.
+ */
+function nkls_secrets_exposed() {
+	if ( ! ini_get( 'allow_url_fopen' ) ) {
+		return null;
+	}
+	$ctx  = stream_context_create( array( 'http' => array( 'timeout' => 4, 'ignore_errors' => true ), 'ssl' => array( 'verify_peer' => false, 'verify_peer_name' => false ) ) );
+	$body = @file_get_contents( nkls_base_url() . '/keys/.ht-private.pem', false, $ctx );
+	if ( false === $body ) {
+		return null;
+	}
+	return false !== strpos( $body, 'PRIVATE KEY' );
+}

@@ -52,49 +52,26 @@ Tema etkinleşince otomatik açılır: **Hoş geldiniz → Lisans → Eklentiler
 | **Kilitli mod** | Premium bileşenler ziyaretçiye hiçbir şey göstermez (editörde kilit uyarısı), teklif formu kapanır, demo içerik ve fiyat ayarları kilitlenir, sitede "lisanssız" şeridi çıkar. |
 | **Geliştirme ortamı** | `localhost`, `*.local`, `*.test`, yerel IP'lerde lisans gerekmez — müşteriniz siteyi yerelde rahatça kurar. |
 
-> ⚠️ **Dürüst not:** Açık kaynak koduyla dağıtılan hiçbir PHP teması %100 kırılamaz değildir; kodu okuyabilen kararlı biri tüm kontrolleri tek tek yamalayabilir. Bu sistem sıradan "nulled" paylaşımları ve basit yamaları engeller. Daha güçlü koruma için `tools/build-theme.php --obfuscate` ile yorumları silin ve **`inc/core/` klasörünü ionCube veya SourceGuardian ile şifreleyin** (bütünlük manifestini şifrelemeden *sonra* yeniden oluşturun).
+> ⚠️ **Dürüst not:** Açık kaynak koduyla dağıtılan hiçbir PHP teması %100 kırılamaz değildir; kodu okuyabilen kararlı biri tüm kontrolleri tek tek yamalayabilir. Bu sistem sıradan "nulled" paylaşımları ve basit yamaları engeller. Daha güçlü koruma için paketi "Kodu sıkıştır" seçeneğiyle üretin ve **`inc/core/` klasörünü ionCube veya SourceGuardian ile şifreleyin** (bütünlük manifestini şifrelemeden *sonra* yeniden oluşturun).
 
 ---
 
-## Kurulum (satıcı tarafı — bir kez)
+## Kurulum (satıcı tarafı — bir kez, terminal gerekmez)
 
-> Lisans sisteminin ayrıntılı, adım adım anlatımı: **[LISANS-REHBERI.md](LISANS-REHBERI.md)**
+> Ayrıntılı anlatım ve sorun giderme: **[LISANS-REHBERI.md](LISANS-REHBERI.md)**
 
-### 1) Anahtar çiftini üretin
+1. `license-server/` klasörünün içeriğini ve `tema-kaynak/nakliye-pro/` klasörünü lisans adresinize yükleyin
+   (hazır paket: `lisans-sunucusu-yukle.zip`), ör. `https://lisans.guvenyolnakliyat.com/buryaa/`.
+2. Tarayıcıda o adresi açın → **kurulum sihirbazı** gereksinimleri kontrol eder, panel parolasını alır, RSA anahtarını üretir.
+3. Panelde **"Tema zip'ini oluştur ve indir"** → müşteriye verilecek, imzalı ve sunucu adresiniz yazılı `nakliye-pro-1.0.0.zip`.
+4. `keys/.ht-private.pem` ve `data/.ht-licenses.sqlite` dosyalarını yedekleyin.
+5. Her satışta panelden lisans oluşturun; müşteriye **zip + anahtar** gönderin.
+
+Komut satırı tercih edenler için:
 ```bash
 php license-server/tools/generate-keys.php
-```
-- `license-server/keys/private.pem` → **gizli**, asla paylaşmayın/depoya eklemeyin (`.gitignore`'da).
-- `nakliye-pro/inc/core/public-key.php` → açık anahtar temaya otomatik yazılır.
-
-### 2) Lisans sunucusunu yayınlayın
-1. `license-server/` klasörünü PHP 7.4+ (pdo_sqlite, openssl) destekli bir sunucuya yükleyin (ör. `https://lisans.firmaniz.com`).
-2. Yönetim paneli parolası için `license-server/config.local.php` oluşturun:
-   ```php
-   <?php return array( 'admin_password_hash' => '...' );
-   ```
-   Özeti üretmek için: `php -r "echo password_hash('GüçlüParola', PASSWORD_DEFAULT);"`
-3. `data/`, `keys/`, `tools/` klasörleri `.htaccess` ile kapalıdır. Nginx kullanıyorsanız bu klasörleri ve `config*.php`, `lib.php` dosyalarını erişime kapatın.
-4. Panel: `https://lisans.firmaniz.com/admin.php` — lisans oluştur, iptal et, +1 yıl uzat, aktivasyon kaldır, API olaylarını izle.
-
-### 3) Temayı sunucunuza yönlendirin
-`nakliye-pro/inc/core/config.php` içinde:
-```php
-define( 'NAKLIYE_LICENSE_SERVER', 'https://lisans.firmaniz.com' );
-define( 'NAKLIYE_PURCHASE_URL', 'https://firmaniz.com/nakliye-pro' );
-```
-
-### 4) Dağıtım paketini oluşturun
-```bash
-php tools/build-theme.php            # imzalı manifest + dist/nakliye-pro-1.0.0.zip
-php tools/build-theme.php --obfuscate  # + çekirdek dosyalardan yorum/boşluk temizleme
-```
-Müşterilere **yalnızca `dist/` içindeki zip'i** verin. (Derlenmemiş klasörde manifest olmadığı için canlı alan adında tema kilitli açılır.)
-
-Komut satırından lisans üretmek için:
-```bash
-php license-server/tools/create-license.php "Müşteri Adı" musteri@mail.com 1 365
-# → NKP-XXXX-XXXX-XXXX-XXXX  (site limiti 1, 365 gün; gün=0 süresiz)
+php license-server/tools/create-license.php "Müşteri" musteri@mail.com 1 365
+php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com/buryaa [--obfuscate]
 ```
 
 ---

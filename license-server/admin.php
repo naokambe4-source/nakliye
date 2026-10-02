@@ -13,9 +13,9 @@ header( 'X-Frame-Options: DENY' );
 header( 'Referrer-Policy: no-referrer' );
 
 $config = nkls_config();
-if ( empty( $config['admin_password_hash'] ) ) {
-	http_response_code( 403 );
-	exit( 'Panel kapalı: config.local.php içinde admin_password_hash tanımlayın.' );
+if ( ! nkls_installed() ) {
+	header( 'Location: install.php' );
+	exit;
 }
 
 if ( empty( $_SESSION['csrf'] ) ) {
@@ -81,8 +81,55 @@ if ( $post_ok && isset( $_POST['do'] ) ) {
 			$db->prepare( 'DELETE FROM licenses WHERE id = ?' )->execute( array( (int) $_POST['id'] ) );
 			$msg = 'Lisans silindi.';
 			break;
+		case 'build':
+			require __DIR__ . '/lib-build.php';
+			$server_url = trim( (string) $_POST['server_url'] );
+			$purchase   = trim( (string) $_POST['purchase_url'] );
+			nkls_save_settings( array( 'base_url' => $server_url, 'purchase_url' => $purchase ) );
+			try {
+				$built = nkls_build_theme(
+					array(
+						'source'      => $config['theme_source'],
+						'private_pem' => file_get_contents( $config['private_key_path'] ),
+						'server_url'  => $server_url,
+						'purchase'    => $purchase,
+						'obfuscate'   => ! empty( $_POST['obfuscate'] ),
+					)
+				);
+				while ( ob_get_level() ) {
+					ob_end_clean();
+				}
+				header( 'Content-Type: application/zip' );
+				header( 'Content-Disposition: attachment; filename="nakliye-pro-' . preg_replace( '/[^0-9.]/', '', $built['version'] ) . '.zip"' );
+				header( 'Content-Length: ' . filesize( $built['zip'] ) );
+				readfile( $built['zip'] );
+				@unlink( $built['zip'] );
+				exit;
+			} catch ( Throwable $e ) {
+				$msg = 'Tema paketi oluşturulamadı: ' . $e->getMessage();
+			}
+			break;
+		case 'password':
+			$p1 = (string) $_POST['new_password'];
+			if ( strlen( $p1 ) < 8 || $p1 !== (string) $_POST['new_password2'] ) {
+				$msg = 'Parola en az 8 karakter olmalı ve iki alan eşleşmeli.';
+			} elseif ( ! password_verify( (string) $_POST['old_password'], $config['admin_password_hash'] ) ) {
+				$msg = 'Mevcut parola hatalı.';
+			} else {
+				nkls_save_settings( array( 'admin_password_hash' => password_hash( $p1, PASSWORD_DEFAULT ) ) );
+				$msg = 'Parola değiştirildi.';
+			}
+			break;
 	}
 }
+
+// Gizli dosyalar dışarıdan okunabiliyor mu? (oturum başına bir kez test edilir)
+if ( ! isset( $_SESSION['exposed'] ) ) {
+	$_SESSION['exposed'] = nkls_secrets_exposed();
+}
+$base_url     = ! empty( $config['base_url'] ) ? $config['base_url'] : nkls_base_url();
+$purchase_url = ! empty( $config['purchase_url'] ) ? $config['purchase_url'] : '';
+$pub_fp       = substr( hash( 'sha256', nkls_public_key() ), 0, 16 );
 
 $q        = isset( $_GET['q'] ) ? trim( (string) $_GET['q'] ) : '';
 $stmt     = $db->prepare( 'SELECT l.*, (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS used FROM licenses l WHERE (? = "" OR l.license_key LIKE ? OR l.customer LIKE ? OR l.email LIKE ?) ORDER BY l.id DESC LIMIT 200' );
@@ -119,6 +166,10 @@ function nkls_csrf_field() {
 	code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px}
 	.b{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700}.b-active{background:#dcfce7;color:#166534}.b-revoked{background:#fee2e2;color:#991b1b}
 	.msg{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-weight:600}
+	.msg.danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+	.build{border:2px solid #fed7aa;background:#fffbf5}.small{font-size:12px;color:#64748b;margin-bottom:0}
+	.chk{justify-content:flex-end}.chk span{display:flex;gap:6px;align-items:center;padding:9px 0}.chk input{width:auto}
+	.grid input{width:100%}
 	.acts{font-size:12px;color:#475569}.acts div{margin:2px 0}
 	@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr}}
 </style>
@@ -128,10 +179,31 @@ function nkls_csrf_field() {
 <main>
 	<?php if ( $msg ) : ?><div class="msg"><?php echo nkls_e( $msg ); ?></div><?php endif; ?>
 
+	<?php if ( true === $_SESSION['exposed'] ) : ?>
+		<div class="msg danger">⚠️ GÜVENLİK: Özel anahtar dosyanız internetten indirilebiliyor! Sunucunuz .htaccess dosyalarını uygulamıyor (muhtemelen Nginx). Hosting firmanızdan <code>keys/</code> ve <code>data/</code> klasörlerine dış erişimi kapatmasını isteyin.</div>
+	<?php endif; ?>
+
 	<div class="stats">
 		<div class="card"><span>Toplam lisans</span><strong><?php echo (int) $stats['t']; ?></strong></div>
 		<div class="card"><span>Aktif lisans</span><strong><?php echo (int) $stats['a']; ?></strong></div>
 		<div class="card"><span>Aktif site</span><strong><?php echo (int) $stats['s']; ?></strong></div>
+	</div>
+
+	<div class="card build">
+		<h3>📦 Müşteriye verilecek tema paketi</h3>
+		<p>Bu buton, açık anahtarınızı ve lisans sunucusu adresini temaya yazar, dosyaları imzalar ve <strong>WordPress'e yüklenmeye hazır zip</strong> indirir. Müşterilerinize bu zip'i verin.</p>
+		<?php if ( ! is_dir( $config['theme_source'] ) ) : ?>
+			<div class="msg danger">Tema kaynağı bulunamadı. <code>tema-kaynak/nakliye-pro</code> klasörünü bu dizine yükleyin.</div>
+		<?php else : ?>
+			<form method="post" class="grid">
+				<?php echo nkls_csrf_field(); ?><input type="hidden" name="do" value="build">
+				<label style="grid-column:span 3">Lisans sunucusu adresi (temanın bağlanacağı adres)<input name="server_url" value="<?php echo nkls_e( $base_url ); ?>" required></label>
+				<label style="grid-column:span 2">Satın alma sayfası (isteğe bağlı)<input name="purchase_url" value="<?php echo nkls_e( $purchase_url ); ?>" placeholder="https://..."></label>
+				<label class="chk"><span><input type="checkbox" name="obfuscate" value="1" checked> Kodu sıkıştır</span></label>
+				<button class="p" style="grid-column:span 6">⬇ Tema zip'ini oluştur ve indir</button>
+			</form>
+		<?php endif; ?>
+		<p class="small">API adresi: <code><?php echo nkls_e( rtrim( $base_url, '/' ) ); ?>/api.php</code> · Açık anahtar parmak izi: <code><?php echo nkls_e( $pub_fp ); ?></code></p>
 	</div>
 
 	<div class="card">
@@ -181,6 +253,17 @@ function nkls_csrf_field() {
 			<?php if ( ! $licenses ) : ?><tr><td colspan="6">Kayıt yok.</td></tr><?php endif; ?>
 			</tbody>
 		</table>
+	</div>
+
+	<div class="card">
+		<h3>Panel parolasını değiştir</h3>
+		<form method="post" class="grid">
+			<?php echo nkls_csrf_field(); ?><input type="hidden" name="do" value="password">
+			<label style="grid-column:span 2">Mevcut parola<input type="password" name="old_password" required></label>
+			<label style="grid-column:span 2">Yeni parola<input type="password" name="new_password" minlength="8" required></label>
+			<label>Tekrar<input type="password" name="new_password2" minlength="8" required></label>
+			<button>Değiştir</button>
+		</form>
 	</div>
 
 	<div class="card">

@@ -1,8 +1,15 @@
-# Yalnızca api.php ve admin.php dışarıdan erişilebilir.
-Options -Indexes
-<FilesMatch "^(config|config\.local|lib)\.php$">
-	Require all denied
-</FilesMatch>
-<FilesMatch "\.(sqlite|pem|md)$">
-	Require all denied
+# Nakliye Pro lisans sunucusu
+# Not: "Options" satırı bilerek yok; birçok paylaşımlı hostingde 500 hatası verir.
+
+DirectoryIndex index.php
+
+# Yalnızca index.php, install.php, admin.php ve api.php dışarıdan çalışır.
+<FilesMatch "^(config|config\.local|lib|lib-build)\.php$|\.(sqlite|pem|md|log)$|^\.ht">
+	<IfModule mod_authz_core.c>
+		Require all denied
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Deny from all
+	</IfModule>
 </FilesMatch>

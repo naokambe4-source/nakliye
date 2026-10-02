@@ -33,57 +33,52 @@ Bu rehber lisans sisteminin **ne olduğunu**, **nasıl kurulduğunu** ve **günl
 
 ---
 
-## 2. Bir kez yapılacak kurulum (sizin tarafınız)
+## 2. Bir kez yapılacak kurulum (terminal gerekmez)
 
-### Adım 1 — Anahtar çiftini üretin
-Projenin ana klasöründe:
-```bash
-php license-server/tools/generate-keys.php
-```
-Çıktı:
-- `license-server/keys/private.pem` → **ÇOK GİZLİ.** Yedekleyin, kimseyle paylaşmayın. Kaybederseniz verdiğiniz tüm lisanslar geçersiz olur ve temayı yeniden derlemeniz gerekir.
-- `nakliye-pro/inc/core/public-key.php` → açık anahtar temaya otomatik yazılır.
+### Adım 1 — Dosyaları yükleyin
+`lisans-sunucusu-yukle.zip` dosyasını hosting panelinizden (cPanel → Dosya Yöneticisi) lisans klasörünüze yükleyip **orada çıkartın**.
+Örnek: `https://lisans.guvenyolnakliyat.com/buryaa/`
 
-### Adım 2 — Lisans sunucusunu yayınlayın
-1. Bir alt alan adı açın: ör. `lisans.siteniz.com` (SSL'li olsun).
-2. `license-server/` klasörünün **içeriğini** bu alan adının köküne yükleyin (`keys/private.pem` dahil).
-3. Sunucuda PHP 7.4+ ve `pdo_sqlite`, `openssl` eklentileri açık olmalı (çoğu hostingde açıktır).
-4. Panel parolası belirleyin. Bilgisayarınızda şunu çalıştırın:
-   ```bash
-   php -r "echo password_hash('BuradaGüçlüBirParola', PASSWORD_DEFAULT);"
-   ```
-   Çıkan `$2y$10$...` metniyle sunucuda `config.local.php` dosyası oluşturun:
-   ```php
-   <?php return array( 'admin_password_hash' => '$2y$10$...' );
-   ```
-5. Kontrol: `https://lisans.siteniz.com/admin.php` açılıp parola sormalı.
-   `https://lisans.siteniz.com/data/` ve `/keys/` adresleri **403 / erişim yok** vermeli.
+Klasörde şunlar olmalı: `index.php`, `install.php`, `admin.php`, `api.php`, `data/`, `keys/`, `tema-kaynak/` …
+> Zip'i çıkartınca fazladan bir alt klasör oluştuysa (ör. `buryaa/lisans-sunucusu/`), içindekileri bir üst klasöre taşıyın.
 
-> Nginx kullanıyorsanız `.htaccess` çalışmaz; `data/`, `keys/`, `tools/` klasörlerini ve `config*.php`, `lib.php` dosyalarını sunucu ayarından erişime kapatın.
+### Adım 2 — Kurulum sihirbazını çalıştırın
+Tarayıcıda klasör adresini açın: `https://lisans.guvenyolnakliyat.com/buryaa/`
+1. Sihirbaz sunucuyu kontrol eder (PHP sürümü, OpenSSL, SQLite, yazma izni). Kırmızı satır varsa cPanel → **"PHP Sürümü Seç"** bölümünden düzeltin.
+2. Bir **panel parolası** belirleyin → **Kurulumu tamamla**.
+3. Sihirbaz anahtar çiftini üretir, veritabanını kurar ve kendini kilitler.
 
-### Adım 3 — Temaya sunucu adresini yazın
-`nakliye-pro/inc/core/config.php`:
-```php
-define( 'NAKLIYE_LICENSE_SERVER', 'https://lisans.siteniz.com' );
-define( 'NAKLIYE_PURCHASE_URL',  'https://siteniz.com/nakliye-pro' ); // "Lisans satın al" butonu
-```
+### Adım 3 — Tema zip'ini panelden indirin
+Panelde **"📦 Müşteriye verilecek tema paketi"** kutusu:
+- *Lisans sunucusu adresi* otomatik dolu gelir (kontrol edin: `https://lisans.guvenyolnakliyat.com/buryaa`)
+- **⬇ Tema zip'ini oluştur ve indir** → `nakliye-pro-1.0.0.zip`
 
-### Adım 4 — Satış paketini derleyin
-```bash
-php tools/build-theme.php
-```
-Çıktı: `dist/nakliye-pro-1.0.0.zip` → **müşteriye verilecek dosya budur.**
+Bu zip; açık anahtarınızı ve sunucu adresinizi içerir, dosyaları imzalıdır. **Müşteriye verilecek dosya budur.**
+> Temada değişiklik yaptığınızda yeni `tema-kaynak/nakliye-pro` klasörünü yükleyip zip'i yeniden indirin.
 
-Bu komut tema dosyalarının parmak izini çıkarıp özel anahtarla imzalar (`manifest.json`). Müşteri bir dosyayı değiştirirse tema bunu fark eder.
+### Adım 4 — Yedek alın
+`keys/.ht-private.pem` (özel anahtar) ve `data/.ht-licenses.sqlite` (lisans kayıtları) dosyalarını bilgisayarınıza yedekleyin. **Özel anahtar kaybolursa verdiğiniz tüm lisanslar geçersiz olur.**
 
-> ⚠️ Derlenmemiş `nakliye-pro` klasörünü müşteriye **vermeyin**: imzalı manifest olmadığı için canlı alan adında kilitli açılır.
-> Temada her değişiklik yaptığınızda 4. adımı tekrarlayın.
+### Güvenlik kontrolü
+Panel, özel anahtarın internetten indirilebilir olup olmadığını kendisi test eder. Kırmızı **"GÜVENLİK"** uyarısı görürseniz sunucunuz `.htaccess` uygulamıyor demektir (genelde Nginx); hosting firmanızdan `keys/` ve `data/` klasörlerini dış erişime kapatmasını isteyin.
+
+### Sorun giderme
+| Belirti | Çözüm |
+|---|---|
+| **500 Internal Server Error** | Klasördeki `.htaccess` dosyasını geçici olarak silip deneyin. Açılırsa hosting firmanıza bildirin; gizli dosyalar `.ht-` önekli olduğu için Apache/LiteSpeed yine korur. |
+| **403 / boş sayfa** (klasör adresinde) | `index.php` yüklenmemiş; zip'i yeniden çıkartın. Ya da doğrudan `.../buryaa/install.php` açın. |
+| **"RSA anahtarı üretilemedi"** | Hosting'de OpenSSL kısıtlı. Firmanızdan `openssl_pkey_new` desteği isteyin. |
+| **"data/ klasörüne yazılamadı"** | Dosya Yöneticisinde `data` ve `keys` klasörlerinin iznini **755** yapın. |
+| **Müşteri: "Lisans sunucusuna bağlanılamadı"** | Adresi tarayıcıda deneyin: `.../buryaa/api.php` → `{"success":false,"message":"Yalnızca POST."}` görmelisiniz. SSL sertifikasının geçerli olduğundan emin olun. |
+
+> Terminal kullanabiliyorsanız aynı işleri komutla da yapabilirsiniz:
+> `php license-server/tools/generate-keys.php` ve `php tools/build-theme.php --server=https://lisans.guvenyolnakliyat.com/buryaa`
 
 ---
 
 ## 3. Lisans satmak (her satışta)
 
-**Yöntem A — Panelden:** `admin.php` → *Yeni lisans oluştur*
+**Yöntem A — Panelden:** `https://lisans.guvenyolnakliyat.com/buryaa/admin.php` → *Yeni lisans oluştur*
 - **Müşteri / E-posta:** kayıt için
 - **Site limiti:** kaç alan adında kullanılabilir (genelde 1)
 - **Süre:** Süresiz, 1 yıl veya 30 gün (deneme)
@@ -150,7 +145,7 @@ Açık kalanlar: temel tema (üst/alt alan, blog, sayfalar), yönetim paneli ve 
 ## 7. Sık sorulan sorular
 
 **Özel anahtarı kaybedersem?**
-Yeni anahtar üretmeniz gerekir (`generate-keys.php --force`). Bu durumda temayı yeniden derleyip tüm müşterilere yeni zip göndermelisiniz. → **`private.pem` dosyasını mutlaka yedekleyin.**
+Yeni anahtar üretmeniz gerekir; bu durumda tüm müşterilere yeni zip göndermelisiniz. → **`keys/.ht-private.pem` dosyasını mutlaka yedekleyin.**
 
 **Lisans sunucum kapanırsa müşteri siteleri çöker mi?**
 Hayır. Son başarılı doğrulamadan sonra **15 gün** (1 gün + 14 gün tolerans) çalışmaya devam eder.
@@ -160,10 +155,7 @@ Zip başka alan adında anahtarsız kilitli açılır. Aynı anahtarla başka si
 
 **Tamamen kırılamaz mı?**
 Hayır — kodu açık dağıtılan hiçbir PHP teması %100 kırılamaz değildir. Kodu okuyabilen kararlı biri kontrolleri tek tek yamalayabilir. Bu sistem "nulled" paylaşımları ve basit yamaları engeller (testte: sahte veritabanı kaydı, jeton düzenleme, dosya yamalama, yabancı dosya ekleme ve manifest silme engellendi). Daha güçlü koruma için:
-```bash
-php tools/build-theme.php --obfuscate
-```
-ile yorumları silin; profesyonel seviye için `inc/core/` klasörünü **ionCube** veya **SourceGuardian** ile şifreleyin.
+paneldeki **"Kodu sıkıştır"** kutusunu işaretli bırakın (yorumları ve boşlukları siler); profesyonel seviye için `inc/core/` klasörünü **ionCube** veya **SourceGuardian** ile şifreleyin.
 
 **Lisans sunucusu verileri nerede?**
-`license-server/data/licenses.sqlite` dosyasında. Bu dosyayı düzenli yedekleyin.
+`data/.ht-licenses.sqlite` dosyasında. Bu dosyayı düzenli yedekleyin.
